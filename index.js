@@ -299,7 +299,7 @@ class Drawer extends Component {
     }
   };
 
-  isOpen = () => this._open
+  isOpen = () => this._open;
 
   open = () => {
     this.props.onOpenStart && this.props.onOpenStart()
