@@ -175,7 +175,7 @@ class Drawer extends Component {
       drawerProps = Object.assign(drawerProps, propsFrag.drawer)
     }
     this.drawer.setNativeProps({style: drawerProps})
-    this.main.setNativeProps({style: mainProps})
+    this.main && this.main.setNativeProps({style: mainProps})
   }
 
   shouldOpenDrawer(dx) {
@@ -298,6 +298,8 @@ class Drawer extends Component {
       this._activeTween = null
     }
   };
+
+  isOpen = () => this._open
 
   open = () => {
     this.props.onOpenStart && this.props.onOpenStart()
