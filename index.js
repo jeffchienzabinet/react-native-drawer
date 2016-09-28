@@ -1,18 +1,11 @@
-import React, {
-  PropTypes,
-  Component,
-} from 'react'
-import {
-  PanResponder,
-  View,
-  StyleSheet,
-  Dimensions,
-  InteractionManager
-} from 'react-native'
+import React, { PropTypes, Component } from 'react'
+import { PanResponder, View, StyleSheet, Dimensions, InteractionManager } from 'react-native'
+
 import tween from './tweener'
 
 let deviceScreen = Dimensions.get('window')
 const DOUBLE_TAP_INTERVAL = 500
+const TAP_DURATION = 250
 const propsWhomRequireUpdate = ['closedDrawerOffset', 'openDrawerOffset', 'type', 'styles']
 
 export default class Drawer extends Component {
@@ -50,6 +43,7 @@ export default class Drawer extends Component {
     closedDrawerOffset: PropTypes.oneOfType([PropTypes.number, PropTypes.func]),
     content: PropTypes.node,
     disabled: PropTypes.bool,
+    elevation: PropTypes.number,
     initializeOpen: PropTypes.bool,
     open: PropTypes.bool,
     negotiatePan: PropTypes.bool,
@@ -99,6 +93,7 @@ export default class Drawer extends Component {
     tapToClose: false,
 
     styles: {},
+    elevation: 0,
     onOpen: () => {},
     onClose: () => {},
     side: 'left',
@@ -195,6 +190,7 @@ export default class Drawer extends Component {
         onMoveShouldSetPanResponderCapture: this.onMoveShouldSetPanResponderCapture,
         onPanResponderMove: this.onPanResponderMove,
         onPanResponderRelease: this.onPanResponderRelease,
+	onPanResponderTerminate: this.onPanResponderTerminate
       })
     }
 
@@ -244,6 +240,11 @@ export default class Drawer extends Component {
     else return this._open ^ Math.abs(dx) > this.state.viewport.width * this.props.panThreshold
   }
 
+  onPanResponderTerminate = (e, gestureState) => {
+    this._panning = false
+    this.shouldOpenDrawer(gestureState.dx) ? this.open() : this.close()
+  };
+    
   onStartShouldSetPanResponderCapture = (e, gestureState) => {
     if (this.shouldCaptureGestures()) return this.processShouldSet(e, gestureState)
     return false
@@ -281,24 +282,21 @@ export default class Drawer extends Component {
   };
 
   onPanResponderRelease = (e, gestureState) => {
-    if (gestureState.moveX < 125) this.processTapGestures()
+    this._panning = false
+    if (Date.now() - this._panStartTime < TAP_DURATION) this.processTapGestures()
     if (Math.abs(gestureState.dx) < 50 && this._activeTween) return
 
     this.shouldOpenDrawer(gestureState.dx) ? this.open() : this.close()
-
     this.updatePosition()
     this._prevLeft = this._left
-    this._panning = false
   };
 
   processShouldSet = (e, gestureState) => {
     let inMask = this.testPanResponderMask(e, gestureState)
-    if (inMask) {
-      if (this.shouldCaptureGestures()) return true
-    }
-    if (this.props.negotiatePan) return false
-    this._panStartTime = Date.now()
     if (!inMask) return false
+    this._panStartTime = Date.now()
+    if (inMask && this.shouldCaptureGestures()) return true
+    if (this.props.negotiatePan) return false
     if (!this.props.acceptPan) return false
     this.terminateActiveTween()
     return true
@@ -373,7 +371,7 @@ export default class Drawer extends Component {
 
   isOpen = () => this._open;
 
-  open = (type) => {
+  open = (type, cb) => {
     let start = this._left
     let end = this.getOpenLeft()
 
@@ -398,11 +396,16 @@ export default class Drawer extends Component {
         this.adjustForCaptureGestures()
         this.props.onOpen()
         this.clearInteractionHandle()
+
+        if(typeof type === 'function') {
+          type() // this is actually a callback
+        } else cb && cb()
+        
       }
     })
   };
 
-  close = (type) => {
+  close = (type, cb) => {
     let start = this._left
     let end = this.getClosedLeft()
 
@@ -427,6 +430,11 @@ export default class Drawer extends Component {
         this.adjustForCaptureGestures()
         this.props.onClose()
         this.clearInteractionHandle()
+
+        if(typeof type === 'function') {
+          type() // this is actually a callback
+        } else cb && cb()
+
       }
     })
   };
@@ -543,6 +551,7 @@ export default class Drawer extends Component {
         {...this.responder.panHandlers}
         key="drawer"
         ref={c => this.drawer = c}
+        elevation={this.props.elevation}
         style={[this.stylesheet.drawer, {height: this.getHeight(), width: this.getDrawerWidth()}]}
         >
         {this.props.content}

@@ -1,11 +1,9 @@
 {
   "name": "react-native-drawer",
-  "version": "2.2.3",
+  "version": "2.3.0",
   "description": "React Native Drawer",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "scripts": {},
   "repository": {
     "type": "git",
     "url": "git@github.com:rt2zz/react-native-drawer.git"
